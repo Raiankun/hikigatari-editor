@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>弾き語りリールエディター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Zen+Maru+Gothic:wght@500;700;900&family=Dela+Gothic+One&family=Shippori+Mincho:wght@500;700;800&family=Yusei+Magic&family=Klee+One:wght@600&family=RocknRoll+One&family=Kaisei+Decol:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#121218;--panel:#1c1c26;--line:#2c2c3a;--txt:#e9e9f1;--sub:#9a9ab0;--acc:#ff5c8a;--acc2:#7c5cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:14px}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
+header h1{font-size:16px;margin:0;font-weight:900;letter-spacing:.05em}
+header h1 span{color:var(--acc)}
+#status{color:var(--sub);font-size:12px;margin-left:auto;text-align:right}
+main{display:flex;gap:16px;padding:16px;height:calc(100vh - 49px)}
+.stage{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:10px;height:100%}
+.canvas-wrap{position:relative;height:calc(100% - 50px);aspect-ratio:9/16;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 10px 40px #0008}
+#cv{width:100%;height:100%;display:block}
+#drop{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;background:#0009;cursor:pointer;text-align:center;padding:20px;font-weight:700}
+#drop.hide{display:none}
+#drop.over{background:#7c5cff88}
+.transport{display:flex;align-items:center;gap:8px;width:100%}
+.transport input[type=range]{flex:1}
+#time{font-variant-numeric:tabular-nums;color:var(--sub);font-size:12px;min-width:90px;text-align:right}
+aside{flex:1;min-width:300px;max-width:560px;background:var(--panel);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:none;border:0;color:var(--sub);padding:10px 4px;cursor:pointer;font:inherit;font-weight:700;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--txt);border-color:var(--acc)}
+.panel{display:none;padding:14px 16px;overflow:auto;flex:1}
+.panel.on{display:block}
+.row{display:grid;grid-template-columns:110px 1fr 46px;align-items:center;gap:8px;margin:7px 0}
+.row span{color:var(--sub);font-size:12px}
+.row em{font-style:normal;color:var(--sub);font-size:11px;text-align:right;font-variant-numeric:tabular-nums}
+.row input[type=text],.row select,.row input[type=number]{width:100%}
+h4{margin:16px 0 4px;font-size:12px;color:var(--acc);letter-spacing:.1em}
+h4:first-child{margin-top:0}
+input,select,textarea,button{font:inherit;color:var(--txt);background:#262634;border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+input[type=range]{padding:0;accent-color:var(--acc)}
+input[type=color]{padding:0;height:28px;width:100%}
+input[type=checkbox]{justify-self:start;accent-color:var(--acc);width:18px;height:18px}
+button{cursor:pointer}
+button:hover{border-color:var(--sub)}
+.btn{background:linear-gradient(135deg,var(--acc),var(--acc2));border:0;color:#fff;font-weight:700;padding:9px 14px}
+.btn:disabled{opacity:.5;cursor:default}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.preset{padding:14px;border-radius:10px;border:0;text-align:left;color:#fff;font-weight:700;min-height:70px}
+.preset.lp{background:#262634;border:1px solid var(--line);font-size:20px;min-height:76px}
+.preset.lp:hover{border-color:var(--acc)}
+.preset small{display:block;font-weight:400;opacity:.85;margin-top:4px;font-size:11px}
+textarea{width:100%;min-height:150px;resize:vertical;line-height:1.6}
+.hint{color:var(--sub);font-size:12px;line-height:1.6;margin:6px 0}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+#lyricList{margin-top:8px;border-top:1px solid var(--line)}
+.lrow{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.lrow.cur{background:#ff5c8a22}
+.lrow.next{background:#7c5cff22}
+.lrow input{width:78px;font-size:12px;padding:3px 5px;font-variant-numeric:tabular-nums}
+.lrow span{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow span.blank{color:var(--sub);font-style:italic}
+.lrow button{padding:2px 7px;font-size:11px}
+.lrow button.star{color:var(--sub)}
+.lrow button.star.on{color:#ffd54a;border-color:#ffd54a}
+.lrow.chorus span{color:#ffd54a;font-weight:700}
+#syncBar{display:none;position:sticky;bottom:0;background:var(--panel);padding:10px 0 4px;border-top:1px solid var(--line)}
+#syncBar.on{display:block}
+#tapBtn{width:100%;padding:18px;font-size:18px}
+#syncNext{margin:6px 0;font-weight:700}
+#exportProg{width:100%;height:8px;margin-top:8px;display:none}
+#dl a{color:var(--acc);font-weight:700}
+@media (max-width:820px){
+  main{flex-direction:column;height:auto}
+  .canvas-wrap{height:auto;width:min(100%,420px)}
+  .stage{height:auto}
+  aside{max-width:none;min-width:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>弾き語り<span>リール</span>エディター</h1>
+  <div id="status">動画を読み込んでください</div>
+</header>
+<main>
+  <section class="stage">
+    <div class="canvas-wrap">
+      <canvas id="cv" width="1080" height="1920"></canvas>
+      <div id="drop">🎸 動画をドロップ<br>またはクリックして選択<small style="font-weight:400;opacity:.8">横動画・縦動画どちらでもOK</small></div>
+    </div>
+    <div class="transport">
+      <button id="playBtn">▶</button>
+      <input type="range" id="seek" min="0" max="1" step="0.01" value="0">
+      <span id="time">0:00 / 0:00</span>
+    </div>
+  </section>
+  <aside>
+    <div class="tabs">
+      <button data-tab="theme" class="on">テーマ</button>
+      <button data-tab="lyrics">歌詞</button>
+      <button data-tab="video">映像</button>
+      <button data-tab="audio">音質</button>
+      <button data-tab="bg">背景</button>
+      <button data-tab="text">文字・演出</button>
+      <button data-tab="export">書き出し</button>
+    </div>
+
+    <div class="panel on" data-panel="theme">
+      <p class="hint">ワンクリックで雰囲気をまとめて変更できます。あとから各タブで微調整してください。</p>
+      <div class="presets" id="presets"></div>
+      <h4>動画ファイル</h4>
+      <div class="btns"><button id="openBtn">別の動画を開く</button><button id="resetBtn">設定を初期化</button></div>
+    </div>
+
+    <div class="panel" data-panel="lyrics">
+      <h4>① 歌詞を貼り付け（1行＝1表示）</h4>
+      <textarea id="lyricsText" placeholder="歌詞を1行ずつ入力&#10;&#10;空行 → 間奏などで歌詞を消すタイミング&#10;★から始まる行 → サビ（目立つ表示）"></textarea>
+      <p class="hint">サビの行は先頭に <b>★</b> を付けるか、下の一覧の ★ ボタンで指定できます。</p>
+      <div class="btns"><button id="applyLyrics">歌詞を反映</button></div>
+      <h4>② タイミングを合わせる</h4>
+      <p class="hint">「タップ同期」を押すと最初から再生されます。各行を<b>歌い始めた瞬間</b>に <b>スペースキー</b>（またはTAPボタン）を押してください。<br>間違えたら <b>Backspace</b> で1行戻ります。終わったら Esc。</p>
+      <div class="btns"><button class="btn" id="syncBtn">▶ タップ同期を開始</button><button id="clearTimes">タイミングを全消去</button></div>
+      <div id="syncBar">
+        <div id="syncNext"></div>
+        <button class="btn" id="tapBtn">TAP（スペース）</button>
+        <div class="btns"><button id="undoTap">↩ 1行戻る</button><button id="endSync">同期を終了</button></div>
+      </div>
+      <h4>③ タイミングの微調整（秒数を直接編集可）</h4>
+      <div id="lyricList"></div>
+      <h4>④ 歌詞の見せ方</h4>
+      <p class="hint">クリックで「通常の行」と「サビ」の見せ方をまとめて切り替えます。下で個別に変更もできます。</p>
+      <div class="presets" id="lyricPresets"></div>
+      <div class="ctrls"></div>
+    </div>
+
+    <div class="panel" data-panel="video"><div class="ctrls"></div></div>
+    <div class="panel" data-panel="audio">
+      <h4>音質プリセット</h4>
+      <div class="btns" id="audioPresets"></div>
+      <p class="hint">「音質調整を有効」のチェックを外すと元の音に戻ります。オン/オフを切り替えて聴き比べてください（ヘッドホン推奨）。</p>
+      <div class="ctrls"></div>
+    </div>
+    <div class="panel" data-panel="bg">
+      <div class="ctrls"></div>
+      <div class="row"><span>背景画像</span><input type="file" id="bgFile" accept="image/*"><em></em></div>
+    </div>
+    <div class="panel" data-panel="text"><div class="ctrls"></div></div>
+    <div class="panel" data-panel="export">
+      <div class="ctrls"></div>
+      <div class="btns"><button id="setIn">現在位置を開始点に</button><button id="setOut">現在位置を終了点に</button></div>
+      <p class="hint">書き出しは<b>リアルタイム</b>で行われます（90秒の動画なら約90秒）。書き出し中はこのタブを前面に表示したままにしてください。<br>出力：1080×1920（Instagramリール推奨サイズ）</p>
+      <div class="btns">
+        <button class="btn" id="exportBtn">🎬 動画を書き出す</button>
+        <button id="coverBtn">🖼 今のフレームをカバー画像に保存</button>
+      </div>
+      <progress id="exportProg" max="1" value="0"></progress>
+      <p id="dl" class="hint"></p>
+    </div>
+  </aside>
+</main>
+<video id="vid" playsinline preload="auto" style="display:none"></video>
+<input type="file" id="fileIn" accept="video/*" hidden>
+
+<script>
+const $ = s => document.querySelector(s);
+const W = 1080, H = 1920;
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const vid = $('#vid');
+const STORE = 'hikigatari-editor-v2';
+
+const FONTS = [['Noto Sans JP','ゴシック'],['M PLUS Rounded 1c','丸ゴシック'],['Zen Maru Gothic','Zen丸ゴシック'],['Dela Gothic One','極太ゴシック'],['Shippori Mincho','明朝'],['Yusei Magic','マジック手書き'],['Klee One','クレー（手書き風）'],['RocknRoll One','ロックンロール'],['Kaisei Decol','デコール']];
+
+const DEF = {
+  // video
+  mode:'card', cardAR:'orig', cardW:0.9, zoom:1, posX:0, panY:0, posY:0.42, radius:36, shadow:true,
+  brightness:1.05, contrast:1.08, saturate:1.1, warmth:0.15, vignette:0.35, grain:0.08, fadeIO:true,
+  segment:false, segInvert:false,
+  // background
+  bgType:'blur', bgColor1:'#1b1036', bgColor2:'#c2477a', bgAngle:160, bgAnimate:true, bgBlur:30, bgDim:0.35,
+  // lyrics
+  lines:[], lyricLayout:'bottom', lyricAnim:'blur', lyricOut:'blur',
+  lyricFont:'Shippori Mincho', lyricWeight:'700', lyricSize:58, lyricColor:'#ffffff', lyricHi:'#ffd54a',
+  lyricStroke:0, lyricStrokeColor:'#000000', lyricGlow:22, lyricGlowColor:'#000000', lyricBox:false, lyricBackdrop:0.1,
+  lyricY:0.74, fullY:0.5, showNext:false, lyricOffset:0, maxLine:10,
+  chorusOn:true, chorusLayout:'full', chorusAnim:'rise', chorusFont:'same', chorusSize:1.1, chorusYOffset:0,
+  chorusColor:'#ffffff', chorusStroke:0, chorusStrokeColor:'#000000', chorusGlow:28, chorusGlowColor:'#000000',
+  chorusBackdrop:0.4, chorusBlur:6, chorusFlash:false, chorusPulse:false, chorusSparkle:false,
+  // audio
+  audioOn:true, hp:80, bass:0, mid:0, presence:2, air:2, comp:0.3, reverb:0.15, revTime:1.8, volume:1, audioFadeIn:1, audioFadeOut:2.5,
+  // title / hook
+  title:'', artist:'', titleFont:'Zen Maru Gothic', titleSize:58, titleColor:'#ffffff', titleY:0.12, titleMode:'always',
+  hook:'', hookDur:3, hookSize:88, hookColor:'#ffe04a', hookY:0.22,
+  progress:true, progressColor:'#ffffff',
+  viz:'bars', vizColor:'#ffffff', vizY:0.9, vizH:1,
+  // export
+  trimStart:0, trimEnd:0, fps:30, bitrate:12, muteMonitor:true,
+};
+
+const PRESETS = [
+  {name:'ナチュラル', desc:'ぼかし背景＋カード。万能', css:'linear-gradient(135deg,#8a6a4a,#d8b88a)', s:{mode:'card',bgType:'blur',bgBlur:30,bgDim:0.3,lyricFont:'Zen Maru Gothic',lyricAnim:'fade',lyricColor:'#ffffff',lyricGlow:24,lyricGlowColor:'#000000',lyricStroke:0,lyricBox:false,warmth:0.2,vignette:0.3,grain:0.06,contrast:1.05,saturate:1.05,titleFont:'Zen Maru Gothic',viz:'bars',vizColor:'#ffffff'}},
+  {name:'エモい夜', desc:'深い紺〜紫＋明朝体', css:'linear-gradient(160deg,#0f0c29,#302b63,#24243e)', s:{mode:'card',bgType:'gradient',bgColor1:'#0f0c29',bgColor2:'#4a2f7a',bgAnimate:true,lyricFont:'Shippori Mincho',lyricWeight:'700',lyricAnim:'fade',lyricColor:'#f3eaff',lyricGlow:30,lyricGlowColor:'#9d7bff',lyricStroke:0,lyricBox:false,warmth:-0.25,vignette:0.5,grain:0.14,contrast:1.1,saturate:0.85,titleFont:'Shippori Mincho',viz:'wave',vizColor:'#c8b6ff',lyricLayout:'vertical',lyricAnim:'stagger',lyricOut:'blur',lyricBackdrop:0.25,chorusLayout:'vertical',chorusAnim:'blur',chorusFont:'same',chorusColor:'#ffffff',chorusStroke:0,chorusGlow:45,chorusGlowColor:'#b48cff'}},
+  {name:'カラオケ', desc:'歌詞が左から色づく', css:'linear-gradient(135deg,#ff416c,#ff4b2b)', s:{mode:'card',bgType:'gradient',bgColor1:'#2b0a3d',bgColor2:'#d12f6b',bgAnimate:true,lyricFont:'M PLUS Rounded 1c',lyricWeight:'900',lyricAnim:'karaoke',lyricColor:'#ffffff',lyricHi:'#ffd54a',lyricStroke:7,lyricStrokeColor:'#2a0b33',lyricGlow:0,lyricBox:false,showNext:true,warmth:0.1,vignette:0.25,grain:0.04,titleFont:'M PLUS Rounded 1c',viz:'bars',vizColor:'#ffd54a'}},
+  {name:'ポップ', desc:'パステル＋弾む文字', css:'linear-gradient(135deg,#ff9a9e,#fad0c4,#a1c4fd)', s:{mode:'card',bgType:'gradient',bgColor1:'#ffb3c1',bgColor2:'#a1c4fd',bgAnimate:true,lyricFont:'Dela Gothic One',lyricWeight:'400',lyricAnim:'pop',lyricColor:'#ffffff',lyricStroke:9,lyricStrokeColor:'#ff5c8a',lyricGlow:0,lyricBox:false,warmth:0.1,vignette:0,grain:0,saturate:1.2,contrast:1.05,titleFont:'Dela Gothic One',titleColor:'#ffffff',viz:'bars',vizColor:'#ffffff'}},
+  {name:'シネマ', desc:'全画面・映画っぽい色', css:'linear-gradient(135deg,#1f2a2e,#5b6b5a)', s:{mode:'cover',zoom:1,posY:0.5,bgType:'color',bgColor1:'#000000',lyricFont:'Noto Sans JP',lyricWeight:'400',lyricSize:52,lyricAnim:'type',lyricColor:'#ffffff',lyricStroke:0,lyricGlow:12,lyricGlowColor:'#000000',lyricBox:false,lyricY:0.8,warmth:-0.1,vignette:0.65,grain:0.22,contrast:1.15,saturate:0.8,brightness:1,titleFont:'Noto Sans JP',viz:'off'}},
+  {name:'手書きノート', desc:'温かい手書き風＋帯', css:'linear-gradient(135deg,#f6e7c8,#e8c79a)', s:{mode:'card',bgType:'gradient',bgColor1:'#f3e3c3',bgColor2:'#d9b48a',bgAnimate:false,lyricFont:'Klee One',lyricWeight:'700',lyricAnim:'fade',lyricColor:'#3a2a1a',lyricStroke:0,lyricGlow:0,lyricBox:true,warmth:0.3,vignette:0.15,grain:0.1,saturate:0.95,titleFont:'Klee One',titleColor:'#3a2a1a',progressColor:'#3a2a1a',viz:'bars',vizColor:'#7a5a3a',lyricLayout:'bottom',lyricAnim:'stagger',chorusLayout:'full',chorusAnim:'stagger',chorusFont:'same',chorusColor:'#fff8e8',chorusStroke:0,chorusGlow:24,chorusGlowColor:'#3a2a1a',chorusBackdrop:0.35}},
+];
+
+const FONT_OPTS = FONTS.map(([v,l])=>[v,l]);
+const LAYOUTS = [['bottom','下に字幕'],['full','画面いっぱい'],['left','左寄せ・大きく'],['vertical','縦書き'],['stack','流れる歌詞（前後の行も）']];
+const ANIMS = [['blur','ぼかしから浮かぶ'],['rise','下からせり上がる'],['stagger','1文字ずつフェード'],['fade','ふわっと'],['spread','字間が広がる'],['zoom','ズームイン'],['wipe','なめらかに流れ込む'],['type','タイプライター'],['karaoke','カラオケ'],['neon','ネオン点灯'],['pop','ポップ'],['bounce','弾む'],['none','なし']];
+const OUTS = [['blur','ぼかして消える'],['fade','フェード'],['up','上へ抜ける'],['none','パッと消える']];
+// 歌詞の見せ方プリセット（通常行とサビの組み合わせ）
+const LYRIC_PRESETS = [
+  {name:'シネマ字幕', sub:'普段は字幕、サビで全面に', font:'Shippori Mincho', s:{lyricLayout:'bottom',lyricAnim:'blur',lyricOut:'blur',lyricFont:'Shippori Mincho',lyricWeight:'700',lyricSize:56,lyricColor:'#ffffff',lyricStroke:0,lyricGlow:22,lyricGlowColor:'#000000',lyricBox:false,lyricBackdrop:0.1,showNext:false,chorusLayout:'full',chorusAnim:'rise',chorusFont:'same',chorusSize:1.1,chorusColor:'#ffffff',chorusStroke:0,chorusGlow:28,chorusGlowColor:'#000000',chorusBackdrop:0.45,chorusBlur:6}},
+  {name:'全面タイポ', sub:'常に歌詞が主役', font:'Noto Sans JP', w:900, s:{lyricLayout:'full',lyricAnim:'blur',lyricOut:'blur',lyricFont:'Noto Sans JP',lyricWeight:'900',lyricSize:62,lyricColor:'#ffffff',lyricStroke:0,lyricGlow:30,lyricGlowColor:'#000000',lyricBox:false,lyricBackdrop:0.3,chorusLayout:'full',chorusAnim:'zoom',chorusFont:'same',chorusSize:1.15,chorusColor:'#ffffff',chorusStroke:0,chorusGlow:36,chorusGlowColor:'#000000',chorusBackdrop:0.55,chorusBlur:8}},
+  {name:'縦書きエモ', sub:'明朝の縦書き', font:'Shippori Mincho', s:{lyricLayout:'vertical',lyricAnim:'stagger',lyricOut:'blur',lyricFont:'Shippori Mincho',lyricWeight:'700',lyricSize:60,lyricColor:'#ffffff',lyricStroke:0,lyricGlow:24,lyricGlowColor:'#000000',lyricBox:false,lyricBackdrop:0.3,chorusLayout:'vertical',chorusAnim:'blur',chorusFont:'same',chorusSize:1.2,chorusColor:'#ffffff',chorusStroke:0,chorusGlow:34,chorusGlowColor:'#000000',chorusBackdrop:0.5,chorusBlur:6}},
+  {name:'エディトリアル', sub:'左寄せの太字', font:'Noto Sans JP', w:900, s:{lyricLayout:'left',lyricAnim:'rise',lyricOut:'up',lyricFont:'Noto Sans JP',lyricWeight:'900',lyricSize:60,lyricY:0.74,lyricColor:'#ffffff',lyricStroke:0,lyricGlow:20,lyricGlowColor:'#000000',lyricBox:false,lyricBackdrop:0.15,chorusLayout:'full',chorusAnim:'rise',chorusFont:'same',chorusSize:1.2,chorusColor:'#ffffff',chorusStroke:0,chorusGlow:24,chorusGlowColor:'#000000',chorusBackdrop:0.5,chorusBlur:6}},
+  {name:'流れる歌詞', sub:'前後の行がスクロール', font:'M PLUS Rounded 1c', w:800, s:{lyricLayout:'stack',lyricAnim:'fade',lyricOut:'fade',lyricFont:'M PLUS Rounded 1c',lyricWeight:'900',lyricSize:58,lyricY:0.72,lyricColor:'#ffffff',lyricHi:'#ffd54a',lyricStroke:0,lyricGlow:20,lyricGlowColor:'#000000',lyricBox:false,lyricBackdrop:0.2,chorusLayout:'same',chorusAnim:'karaoke',chorusFont:'same',chorusSize:1.1,chorusColor:'#ffffff',chorusStroke:0,chorusGlow:20,chorusGlowColor:'#000000',chorusBackdrop:0.4,chorusBlur:4}},
+  {name:'ネオン', sub:'夜っぽく光る', font:'Zen Maru Gothic', w:700, s:{lyricLayout:'full',lyricAnim:'neon',lyricOut:'fade',lyricFont:'Zen Maru Gothic',lyricWeight:'700',lyricSize:60,lyricColor:'#fff4fb',lyricStroke:0,lyricGlow:40,lyricGlowColor:'#ff4fa3',lyricBox:false,lyricBackdrop:0.45,chorusLayout:'full',chorusAnim:'neon',chorusFont:'same',chorusSize:1.2,chorusColor:'#f2fdff',chorusStroke:0,chorusGlow:55,chorusGlowColor:'#3fd0ff',chorusBackdrop:0.6,chorusBlur:8}},
+  {name:'ワイド', sub:'字間がゆっくり広がる', font:'Noto Sans JP', w:400, s:{lyricLayout:'full',lyricAnim:'spread',lyricOut:'blur',lyricFont:'Noto Sans JP',lyricWeight:'400',lyricSize:50,lyricColor:'#ffffff',lyricStroke:0,lyricGlow:20,lyricGlowColor:'#000000',lyricBox:false,lyricBackdrop:0.3,chorusLayout:'full',chorusAnim:'spread',chorusFont:'same',chorusSize:1.35,chorusColor:'#ffffff',chorusStroke:0,chorusGlow:26,chorusGlowColor:'#000000',chorusBackdrop:0.5,chorusBlur:8}},
+  {name:'手書き日記', sub:'クレー体でやさしく', font:'Klee One', w:600, s:{lyricLayout:'bottom',lyricAnim:'wipe',lyricOut:'fade',lyricFont:'Klee One',lyricWeight:'700',lyricSize:58,lyricColor:'#ffffff',lyricStroke:0,lyricGlow:20,lyricGlowColor:'#000000',lyricBox:false,lyricBackdrop:0.1,chorusLayout:'full',chorusAnim:'stagger',chorusFont:'same',chorusSize:1.2,chorusColor:'#ffffff',chorusStroke:0,chorusGlow:26,chorusGlowColor:'#000000',chorusBackdrop:0.4,chorusBlur:5}},
+];
+const PANELS = {
+  lyrics: [
+    {h:'通常の行'},
+    {k:'lyricLayout',l:'レイアウト',t:'select',o:LAYOUTS},
+    {k:'lyricAnim',l:'出方',t:'select',o:ANIMS},
+    {k:'lyricOut',l:'消え方',t:'select',o:OUTS},
+    {k:'lyricFont',l:'フォント',t:'select',o:FONT_OPTS},
+    {k:'lyricWeight',l:'太さ',t:'select',o:[['400','普通'],['700','太字'],['900','極太']]},
+    {k:'lyricSize',l:'文字サイズ',t:'range',min:28,max:140,s:1},
+    {k:'lyricY',l:'縦位置（下・左寄せ・流れる）',t:'range',min:0.05,max:0.97,s:0.005},
+    {k:'fullY',l:'縦位置（画面いっぱい・縦書き）',t:'range',min:0.2,max:0.8,s:0.005},
+    {k:'lyricColor',l:'文字色',t:'color'},
+    {k:'lyricHi',l:'カラオケ色',t:'color'},
+    {k:'lyricStroke',l:'縁取り',t:'range',min:0,max:20,s:1},
+    {k:'lyricStrokeColor',l:'縁取り色',t:'color'},
+    {k:'lyricGlow',l:'光彩/影',t:'range',min:0,max:60,s:1},
+    {k:'lyricGlowColor',l:'光彩色',t:'color'},
+    {k:'lyricBackdrop',l:'歌詞中に映像を暗く',t:'range',min:0,max:0.8,s:0.01},
+    {k:'lyricBox',l:'背景帯（下・左寄せ）',t:'checkbox'},
+    {k:'showNext',l:'次の行も表示（下）',t:'checkbox'},
+    {k:'lyricOffset',l:'全体のずれ補正(秒)',t:'range',min:-2,max:2,s:0.05},
+    {k:'maxLine',l:'1行の最大表示秒',t:'range',min:3,max:30,s:0.5},
+    {h:'★ サビの行'},
+    {k:'chorusOn',l:'サビを別の見せ方に',t:'checkbox'},
+    {k:'chorusLayout',l:'レイアウト',t:'select',o:[['same','通常と同じ'],...LAYOUTS]},
+    {k:'chorusAnim',l:'出方',t:'select',o:[['same','通常と同じ'],...ANIMS]},
+    {k:'chorusFont',l:'フォント',t:'select',o:[['same','通常と同じ'],...FONT_OPTS]},
+    {k:'chorusSize',l:'サイズ倍率',t:'range',min:0.7,max:2,s:0.05},
+    {k:'chorusYOffset',l:'位置のずらし',t:'range',min:-0.4,max:0.3,s:0.005},
+    {k:'chorusColor',l:'文字色',t:'color'},
+    {k:'chorusStroke',l:'縁取り',t:'range',min:0,max:20,s:1},
+    {k:'chorusStrokeColor',l:'縁取り色',t:'color'},
+    {k:'chorusGlow',l:'光彩',t:'range',min:0,max:80,s:1},
+    {k:'chorusGlowColor',l:'光彩色',t:'color'},
+    {k:'chorusBackdrop',l:'映像を暗く',t:'range',min:0,max:0.85,s:0.01},
+    {k:'chorusBlur',l:'映像をぼかす',t:'range',min:0,max:20,s:0.5},
+    {h:'おまけ演出（控えめ推奨）'},
+    {k:'chorusFlash',l:'サビ頭でフラッシュ',t:'checkbox'},
+    {k:'chorusPulse',l:'映像がドンッと揺れる',t:'checkbox'},
+    {k:'chorusSparkle',l:'キラキラ',t:'checkbox'},
+  ],
+  audio: [
+    {k:'audioOn',l:'音質調整を有効',t:'checkbox'},
+    {h:'イコライザー'},
+    {k:'hp',l:'低音ノイズカット(Hz)',t:'range',min:20,max:250,s:1},
+    {k:'bass',l:'低音（ギターの胴鳴り）',t:'range',min:-12,max:12,s:0.5},
+    {k:'mid',l:'こもり（−で解消）',t:'range',min:-12,max:6,s:0.5},
+    {k:'presence',l:'声の抜け・存在感',t:'range',min:-6,max:12,s:0.5},
+    {k:'air',l:'きらめき（弦の高音）',t:'range',min:-6,max:12,s:0.5},
+    {h:'ダイナミクス・空間'},
+    {k:'comp',l:'音圧（コンプ）',t:'range',min:0,max:1,s:0.01},
+    {k:'reverb',l:'リバーブ（響き）',t:'range',min:0,max:0.8,s:0.01},
+    {k:'revTime',l:'響きの長さ(秒)',t:'range',min:0.5,max:5,s:0.1},
+    {k:'volume',l:'音量',t:'range',min:0.3,max:2.5,s:0.01},
+    {h:'フェード（書き出し範囲の最初と最後）'},
+    {k:'audioFadeIn',l:'フェードイン(秒)',t:'range',min:0,max:5,s:0.1},
+    {k:'audioFadeOut',l:'フェードアウト(秒)',t:'range',min:0,max:8,s:0.1},
+  ],
+  video: [
+    {h:'配置'},
+    {k:'mode',l:'レイアウト',t:'select',o:[['card','カード（背景あり）'],['cover','全画面（切り抜き）']]},
+    {k:'cardAR',l:'カードの形',t:'select',o:[['orig','元の比率'],['1:1','正方形 1:1'],['4:5','縦長 4:5'],['3:4','縦長 3:4']]},
+    {k:'cardW',l:'カードの幅',t:'range',min:0.5,max:1,s:0.01},
+    {k:'posY',l:'カード/映像の上下位置',t:'range',min:0,max:1,s:0.005},
+    {k:'zoom',l:'ズーム（切り抜き）',t:'range',min:0.4,max:3,s:0.01},
+    {k:'posX',l:'切り抜き 左右',t:'range',min:-0.6,max:0.6,s:0.005},
+    {k:'panY',l:'切り抜き 上下',t:'range',min:-0.6,max:0.6,s:0.005},
+    {k:'radius',l:'角丸',t:'range',min:0,max:150,s:1},
+    {k:'shadow',l:'影',t:'checkbox'},
+    {h:'色・質感'},
+    {k:'brightness',l:'明るさ',t:'range',min:0.5,max:1.6,s:0.01},
+    {k:'contrast',l:'コントラスト',t:'range',min:0.5,max:1.6,s:0.01},
+    {k:'saturate',l:'彩度',t:'range',min:0,max:2,s:0.01},
+    {k:'warmth',l:'色温度（寒↔暖）',t:'range',min:-1,max:1,s:0.01},
+    {k:'vignette',l:'周辺減光',t:'range',min:0,max:1,s:0.01},
+    {k:'grain',l:'フィルム粒子',t:'range',min:0,max:0.5,s:0.01},
+    {k:'fadeIO',l:'映像を最初と最後で暗転',t:'checkbox'},
+    {h:'人物切り抜き（β）'},
+    {k:'segment',l:'背景を差し替え',t:'checkbox'},
+    {k:'segInvert',l:'マスク反転',t:'checkbox'},
+  ],
+  bg: [
+    {k:'bgType',l:'背景タイプ',t:'select',o:[['blur','動画をぼかす'],['gradient','グラデーション'],['color','単色'],['image','画像']]},
+    {k:'bgColor1',l:'色1',t:'color'},
+    {k:'bgColor2',l:'色2',t:'color'},
+    {k:'bgAngle',l:'グラデ角度',t:'range',min:0,max:360,s:1},
+    {k:'bgAnimate',l:'ゆっくり動かす',t:'checkbox'},
+    {k:'bgBlur',l:'ぼかし強さ',t:'range',min:5,max:80,s:1},
+    {k:'bgDim',l:'背景を暗く',t:'range',min:0,max:0.9,s:0.01},
+  ],
+  text: [
+    {h:'曲名・アーティスト'},
+    {k:'title',l:'曲名',t:'text'},
+    {k:'artist',l:'アーティスト / 一言',t:'text'},
+    {k:'titleMode',l:'表示',t:'select',o:[['always','ずっと'],['intro','最初の5秒'],['off','非表示']]},
+    {k:'titleFont',l:'フォント',t:'select',o:FONT_OPTS},
+    {k:'titleSize',l:'サイズ',t:'range',min:28,max:120,s:1},
+    {k:'titleColor',l:'色',t:'color'},
+    {k:'titleY',l:'縦位置',t:'range',min:0.03,max:0.95,s:0.005},
+    {h:'冒頭フック（最初の数秒で目を止める一言）'},
+    {k:'hook',l:'テキスト',t:'text'},
+    {k:'hookDur',l:'表示秒数',t:'range',min:1,max:8,s:0.5},
+    {k:'hookSize',l:'サイズ',t:'range',min:40,max:160,s:1},
+    {k:'hookColor',l:'色',t:'color'},
+    {k:'hookY',l:'縦位置',t:'range',min:0.05,max:0.95,s:0.005},
+    {h:'音に反応するビジュアライザー'},
+    {k:'viz',l:'種類',t:'select',o:[['bars','バー'],['wave','波形'],['off','なし']]},
+    {k:'vizColor',l:'色',t:'color'},
+    {k:'vizY',l:'縦位置',t:'range',min:0.05,max:0.98,s:0.005},
+    {k:'vizH',l:'高さ',t:'range',min:0.3,max:3,s:0.05},
+    {h:'プログレスバー'},
+    {k:'progress',l:'表示',t:'checkbox'},
+    {k:'progressColor',l:'色',t:'color'},
+  ],
+  export: [
+    {k:'trimStart',l:'開始（秒）',t:'number',s:0.1},
+    {k:'trimEnd',l:'終了（秒, 0=最後）',t:'number',s:0.1},
+    {k:'fps',l:'フレームレート',t:'select',o:[['30','30fps'],['60','60fps']]},
+    {k:'bitrate',l:'画質(Mbps)',t:'range',min:4,max:25,s:1},
+    {k:'muteMonitor',l:'書き出し中は音を消す',t:'checkbox'},
+  ],
+};
+
+let S = loadState();
+function loadState(){
+  try { const j = JSON.parse(localStorage.getItem(STORE)); if (j) return Object.assign({}, DEF, j); } catch(e){}
+  try { // 旧バージョンからは歌詞・曲名・範囲だけ引き継ぐ
+    const o = JSON.parse(localStorage.getItem('hikigatari-editor-v1'));
+    if (o){ const keep = {}; ['lines','title','artist','hook','trimStart','trimEnd'].forEach(k=>{ if (k in o) keep[k]=o[k]; }); return Object.assign(structuredClone(DEF), keep); }
+  } catch(e){}
+  return structuredClone(DEF);
+}
+let saveTimer;
+function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ try{ localStorage.setItem(STORE, JSON.stringify(S)); }catch(e){} }, 300); }
+function status(msg){ $('#status').textContent = msg; }
+
+// ---------- controls ----------
+function fmtVal(c, v){
+  if (c.t !== 'range') return '';
+  return (Math.abs(v) >= 10 || Number.isInteger(c.s)) ? String(Math.round(v)) : Number(v).toFixed(2);
+}
+function buildControls(){
+  for (const [panel, specs] of Object.entries(PANELS)){
+    const host = document.querySelector(`[data-panel="${panel}"] .ctrls`);
+    for (const c of specs){
+      if (c.h){ host.insertAdjacentHTML('beforeend', `<h4>${c.h}</h4>`); continue; }
+      const row = document.createElement('label'); row.className = 'row';
+      const lab = document.createElement('span'); lab.textContent = c.l;
+      let el;
+      if (c.t === 'select'){ el = document.createElement('select'); c.o.forEach(([v,t])=>el.add(new Option(t,v))); }
+      else { el = document.createElement('input'); el.type = c.t; if (c.min!=null){ el.min=c.min; el.max=c.max; } if (c.s) el.step=c.s; }
+      el.dataset.k = c.k;
+      const em = document.createElement('em');
+      el.addEventListener('input', ()=>{
+        let v = el.type==='checkbox' ? el.checked : (el.type==='range'||el.type==='number') ? parseFloat(el.value)||0 : el.value;
+        if (c.k === 'fps') v = parseInt(v);
+        S[c.k] = v; em.textContent = fmtVal(c, v); save();
+        if (/Font|Weight/.test(c.k)) loadFonts();
+        if (c.k === 'segment' && v) initSeg();
+        if (AUDIO_KEYS.includes(c.k)) applyAudio(c.k === 'revTime');
+        if (/audioFade|trim/.test(c.k)) scheduleFade();
+      });
+      el._spec = c; el._em = em;
+      row.append(lab, el, em); host.append(row);
+    }
+  }
+}
+function syncControls(){
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    const v = S[el.dataset.k];
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+    el._em.textContent = fmtVal(el._spec, v);
+  });
+  $('#lyricsText').value = lyricsToText();
+  renderLyricList();
+  applyAudio(true);
+}
+function loadFonts(){
+  [S.lyricFont, S.titleFont, S.chorusFont, 'Dela Gothic One'].filter(f=>f!=='same').forEach(f=>{
+    ['400','700','900'].forEach(w=>document.fonts.load(`${w} 40px "${f}"`).catch(()=>{}));
+  });
+}
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on', x===b));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on', p.dataset.panel===b.dataset.tab));
+});
+
+PRESETS.forEach(p=>{
+  const b = document.createElement('button'); b.className = 'preset'; b.style.background = p.css;
+  b.innerHTML = `${p.name}<small>${p.desc}</small>`;
+  b.onclick = ()=>{ Object.assign(S, p.s); syncControls(); loadFonts(); save(); status(`テーマ「${p.name}」を適用`); };
+  $('#presets').append(b);
+});
+$('#resetBtn').onclick = ()=>{ if (confirm('歌詞以外の設定を初期化しますか？')){ const lines=S.lines, title=S.title, artist=S.artist; S = structuredClone(DEF); Object.assign(S,{lines,title,artist}); syncControls(); loadFonts(); save(); } };
+
+// ---------- video loading ----------
+let videoReady = false, audioCtx, master, monitor, analyser, recDest;
+function ensureAudio(){
+  if (audioCtx) { audioCtx.resume(); return; }
+  audioCtx = new AudioContext();
+  const src = audioCtx.createMediaElementSource(vid);
+  master = audioCtx.createGain(); monitor = audioCtx.createGain();
+  analyser = audioCtx.createAnalyser(); analyser.fftSize = 512; analyser.smoothingTimeConstant = 0.8;
+  recDest = audioCtx.createMediaStreamDestination();
+  // 音質チェーン: ハイパス → EQ(4バンド) → コンプ → 残響(dry/wet) → リミッター
+  const A = audio = {};
+  A.inG = audioCtx.createGain(); A.bypass = audioCtx.createGain();
+  A.hp = audioCtx.createBiquadFilter(); A.hp.type = 'highpass'; A.hp.Q.value = 0.7;
+  A.bass = audioCtx.createBiquadFilter(); A.bass.type = 'lowshelf'; A.bass.frequency.value = 140;
+  A.mid = audioCtx.createBiquadFilter(); A.mid.type = 'peaking'; A.mid.frequency.value = 350; A.mid.Q.value = 1;
+  A.pres = audioCtx.createBiquadFilter(); A.pres.type = 'peaking'; A.pres.frequency.value = 3200; A.pres.Q.value = 0.9;
+  A.air = audioCtx.createBiquadFilter(); A.air.type = 'highshelf'; A.air.frequency.value = 9000;
+  A.comp = audioCtx.createDynamicsCompressor(); A.comp.attack.value = 0.01; A.comp.release.value = 0.2; A.comp.knee.value = 10;
+  A.makeup = audioCtx.createGain(); A.dry = audioCtx.createGain(); A.wet = audioCtx.createGain();
+  A.conv = audioCtx.createConvolver();
+  A.sum = audioCtx.createGain();
+  A.lim = audioCtx.createDynamicsCompressor(); A.lim.threshold.value = -1.5; A.lim.knee.value = 0; A.lim.ratio.value = 20; A.lim.attack.value = 0.002; A.lim.release.value = 0.1;
+  src.connect(A.inG); src.connect(A.bypass);
+  A.inG.connect(A.hp); A.hp.connect(A.bass); A.bass.connect(A.mid); A.mid.connect(A.pres); A.pres.connect(A.air); A.air.connect(A.comp); A.comp.connect(A.makeup);
+  A.makeup.connect(A.dry); A.makeup.connect(A.conv); A.conv.connect(A.wet);
+  A.dry.connect(A.sum); A.wet.connect(A.sum); A.sum.connect(A.lim); A.lim.connect(master);
+  A.bypass.connect(master);
+  master.connect(analyser); master.connect(monitor); monitor.connect(audioCtx.destination); master.connect(recDest);
+  applyAudio(true);
+}
+let audio = null, lastRevTime = null;
+const AUDIO_KEYS = ['audioOn','hp','bass','mid','presence','air','comp','reverb','revTime','volume'];
+const AUDIO_PRESETS = [
+  ['そのまま', {audioOn:true, hp:30, bass:0, mid:0, presence:0, air:0, comp:0, reverb:0, revTime:1.8, volume:1}],
+  ['クリア', {audioOn:true, hp:90, bass:0, mid:-3, presence:4, air:3, comp:0.35, reverb:0.12, revTime:1.6, volume:1}],
+  ['ボーカルくっきり', {audioOn:true, hp:120, bass:-2, mid:-4, presence:6, air:2, comp:0.55, reverb:0.1, revTime:1.4, volume:1}],
+  ['温かい', {audioOn:true, hp:60, bass:3, mid:0, presence:-1, air:-2, comp:0.3, reverb:0.18, revTime:2, volume:1}],
+  ['ライブハウス', {audioOn:true, hp:80, bass:2, mid:-1, presence:2, air:1, comp:0.5, reverb:0.32, revTime:2.4, volume:1}],
+  ['ホール', {audioOn:true, hp:80, bass:1, mid:-2, presence:2, air:2, comp:0.3, reverb:0.5, revTime:4.5, volume:1}],
+];
+// 音声のフェードイン/アウト：再生位置から先の音量カーブを AudioParam に予約する
+// （画面の描画頻度に左右されず、書き出しにも正確に入る）
+function fadeGainAt(x){
+  const [ts, te] = trim();
+  const fi = S.audioFadeIn > 0 ? clamp((x-ts)/S.audioFadeIn) : 1;
+  const fo = S.audioFadeOut > 0 ? clamp((te-x)/S.audioFadeOut) : 1;
+  return Math.pow(Math.min(fi, fo), 2); // 耳に自然なカーブ
+}
+function scheduleFade(){
+  if (!master || !videoReady) return;
+  const g = master.gain, now = audioCtx.currentTime, t = vid.currentTime, rate = vid.playbackRate || 1;
+  g.cancelScheduledValues(now);
+  g.setValueAtTime(fadeGainAt(t), now);
+  if (vid.paused) return;
+  const [ts, te] = trim();
+  const pts = new Set([ts + S.audioFadeIn, te - S.audioFadeOut, te]);
+  for (let x = ts; x < ts + S.audioFadeIn; x += 0.05) pts.add(x);
+  for (let x = te - S.audioFadeOut; x < te; x += 0.05) pts.add(x);
+  [...pts].filter(x=>x > t && x <= te).sort((a,b)=>a-b)
+    .forEach(x=>g.linearRampToValueAtTime(fadeGainAt(x), now + (x - t)/rate));
+}
+['play','playing','seeked','pause','ratechange'].forEach(ev=>vid.addEventListener(ev, scheduleFade));
+function makeImpulse(sec){
+  const rate = audioCtx.sampleRate, len = Math.floor(rate*sec), buf = audioCtx.createBuffer(2, len, rate);
+  for (let c=0;c<2;c++){ const d = buf.getChannelData(c); for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 3); }
+  return buf;
+}
+function applyAudio(rebuildRev){
+  if (!audio) return;
+  const A = audio, now = audioCtx.currentTime, set = (p,v)=>p.setTargetAtTime(v, now, 0.03);
+  set(A.inG.gain, S.audioOn ? 1 : 0); set(A.bypass.gain, S.audioOn ? 0 : 1);
+  set(A.hp.frequency, S.hp); set(A.bass.gain, S.bass); set(A.mid.gain, S.mid); set(A.pres.gain, S.presence); set(A.air.gain, S.air);
+  set(A.comp.threshold, -4 - S.comp*32); set(A.comp.ratio, 1 + S.comp*5);
+  set(A.makeup.gain, S.volume * (1 + S.comp*1.3));
+  set(A.dry.gain, 1 - S.reverb*0.4); set(A.wet.gain, S.reverb*0.9);
+  if ((rebuildRev || !A.conv.buffer) && lastRevTime !== S.revTime){ lastRevTime = S.revTime; A.conv.buffer = makeImpulse(S.revTime); }
+}
+LYRIC_PRESETS.forEach(p=>{
+  const b = document.createElement('button'); b.className = 'preset lp';
+  b.style.fontFamily = `"${p.font}"`; b.style.fontWeight = p.w || 700;
+  b.innerHTML = `${p.name}<small style="font-family:'Noto Sans JP'">${p.sub}</small>`;
+  b.onclick = ()=>{ Object.assign(S, p.s); syncControls(); loadFonts(); save(); status(`歌詞スタイル「${p.name}」を適用`); };
+  $('#lyricPresets').append(b);
+});
+AUDIO_PRESETS.forEach(([name, v])=>{
+  const b = document.createElement('button'); b.textContent = name;
+  b.onclick = ()=>{ Object.assign(S, v); syncControls(); save(); status(`音質「${name}」を適用`); };
+  $('#audioPresets').append(b);
+});
+function openFile(file){
+  if (!file || !file.type.startsWith('video') && !/\.(mov|mp4|m4v|webm)$/i.test(file.name)) return;
+  ensureAudio();
+  videoReady = false;
+  vid.src = URL.createObjectURL(file);
+  status(`読み込み中: ${file.name}`);
+}
+vid.addEventListener('loadeddata', ()=>{
+  videoReady = true; $('#drop').classList.add('hide');
+  $('#seek').max = vid.duration;
+  if (S.trimEnd > vid.duration) S.trimEnd = 0;
+  status(`${vid.videoWidth}×${vid.videoHeight} / ${fmt(vid.duration)}`);
+});
+vid.addEventListener('error', ()=>status('この動画は再生できませんでした。Chrome / Safari の最新版でお試しください。'));
+$('#drop').onclick = $('#openBtn').onclick = ()=>$('#fileIn').click();
+$('#fileIn').onchange = e=>openFile(e.target.files[0]);
+const wrap = $('.canvas-wrap');
+wrap.addEventListener('dragover', e=>{ e.preventDefault(); $('#drop').classList.add('over'); });
+wrap.addEventListener('dragleave', ()=>$('#drop').classList.remove('over'));
+wrap.addEventListener('drop', e=>{ e.preventDefault(); $('#drop').classList.remove('over'); openFile(e.dataTransfer.files[0]); });
+
+let bgImg = null;
+$('#bgFile').onchange = e=>{
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image(); img.onload = ()=>{ bgImg = img; S.bgType='image'; syncControls(); save(); }; img.src = URL.createObjectURL(f);
+};
+
+// ---------- transport ----------
+function fmt(s){ s = Math.max(0, s||0); return `${Math.floor(s/60)}:${(s%60).toFixed(1).padStart(4,'0')}`; }
+function trim(){ const d = vid.duration || 0; const ts = Math.min(S.trimStart||0, d); const te = S.trimEnd>0 ? Math.min(S.trimEnd, d) : d; return [ts, Math.max(ts, te)]; }
+function togglePlay(){
+  if (!videoReady) return;
+  ensureAudio();
+  if (vid.paused){ const [ts,te]=trim(); if (vid.currentTime >= te - 0.05 || vid.currentTime < ts) vid.currentTime = ts; vid.play(); } else vid.pause();
+}
+$('#playBtn').onclick = togglePlay;
+vid.addEventListener('play', ()=>$('#playBtn').textContent='❚❚');
+vid.addEventListener('pause', ()=>$('#playBtn').textContent='▶');
+$('#seek').addEventListener('input', e=>{ vid.currentTime = parseFloat(e.target.value); });
+$('#setIn').onclick = ()=>{ S.trimStart = +vid.currentTime.toFixed(2); syncControls(); save(); };
+$('#setOut').onclick = ()=>{ S.trimEnd = +vid.currentTime.toFixed(2); syncControls(); save(); };
+
+// ---------- lyrics ----------
+function applyLyrics(){
+  const texts = $('#lyricsText').value.replace(/\s+$/,'').split('\n').map(s=>s.trim());
+  S.lines = texts.map((raw,i)=>{
+    const chorus = /^[★☆*＊]/.test(raw);
+    return { text: raw.replace(/^[★☆*＊]\s*/, ''), chorus, start: S.lines[i] ? S.lines[i].start : null };
+  });
+  if (texts.length===1 && !texts[0]) S.lines = [];
+  renderLyricList(); save();
+}
+function lyricsToText(){ return S.lines.map(l=>(l.chorus?'★':'')+l.text).join('\n'); }
+function parseTime(str){
+  str = String(str).trim(); if (!str) return null;
+  const p = str.split(':'); let v = 0; for (const x of p) v = v*60 + parseFloat(x);
+  return isNaN(v) ? null : v;
+}
+function renderLyricList(){
+  const host = $('#lyricList'); host.innerHTML = '';
+  S.lines.forEach((l,i)=>{
+    const row = document.createElement('div'); row.className = 'lrow'; row.dataset.i = i;
+    const jump = document.createElement('button'); jump.textContent = '▶'; jump.title = 'この行から再生';
+    jump.onclick = ()=>{ if (l.start!=null && videoReady){ vid.currentTime = Math.max(0, l.start - 1); ensureAudio(); vid.play(); } };
+    const inp = document.createElement('input'); inp.value = l.start==null ? '' : fmt(l.start); inp.placeholder = '--:--';
+    inp.onchange = ()=>{ l.start = parseTime(inp.value); inp.value = l.start==null ? '' : fmt(l.start); save(); };
+    const now = document.createElement('button'); now.textContent = '⏱'; now.title = '現在位置をセット';
+    now.onclick = ()=>{ l.start = vid.currentTime; inp.value = fmt(l.start); save(); };
+    const star = document.createElement('button'); star.textContent = '★'; star.title = 'サビにする/解除';
+    star.className = 'star' + (l.chorus ? ' on' : ''); if (l.chorus) row.classList.add('chorus');
+    star.onclick = ()=>{ l.chorus = !l.chorus; $('#lyricsText').value = lyricsToText(); renderLyricList(); save(); };
+    const sp = document.createElement('span'); sp.textContent = l.text || '（空白：歌詞を消す）'; if (!l.text) sp.className='blank';
+    row.append(jump, inp, now, star, sp); host.append(row);
+  });
+}
+$('#applyLyrics').onclick = ()=>{ applyLyrics(); status(`${S.lines.length}行を反映しました`); };
+$('#clearTimes').onclick = ()=>{ if (confirm('すべてのタイミングを消去しますか？')){ S.lines.forEach(l=>l.start=null); renderLyricList(); save(); } };
+
+let syncIdx = -1;
+function updateSyncLabel(){
+  const l = S.lines[syncIdx];
+  $('#syncNext').textContent = l ? `次（${syncIdx+1}/${S.lines.length}）: ${l.text || '（空白）'}` : '';
+}
+function startSync(){
+  applyLyrics();
+  if (!videoReady){ alert('先に動画を読み込んでください'); return; }
+  if (!S.lines.length){ alert('歌詞を入力してください'); return; }
+  S.lines.forEach(l=>l.start=null); renderLyricList();
+  syncIdx = 0; $('#syncBar').classList.add('on'); updateSyncLabel();
+  ensureAudio(); vid.currentTime = trim()[0]; vid.play();
+  document.activeElement.blur();
+}
+function tap(){
+  if (syncIdx < 0) return;
+  S.lines[syncIdx].start = Math.max(0, vid.currentTime - 0.12); // 反応の遅れを少し補正
+  syncIdx++; renderLyricList(); save();
+  if (syncIdx >= S.lines.length) endSync(); else updateSyncLabel();
+}
+function undoTap(){
+  if (syncIdx <= 0) return;
+  syncIdx--; const l = S.lines[syncIdx]; const back = l.start; l.start = null;
+  vid.currentTime = Math.max(0, (back ?? vid.currentTime) - 2.5);
+  renderLyricList(); updateSyncLabel(); save();
+}
+function endSync(){ syncIdx = -1; $('#syncBar').classList.remove('on'); vid.pause(); status('タイミングを保存しました'); }
+$('#syncBtn').onclick = startSync;
+$('#tapBtn').onclick = tap; $('#undoTap').onclick = undoTap; $('#endSync').onclick = endSync;
+
+document.addEventListener('keydown', e=>{
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox';
+  if (syncIdx >= 0){
+    if (e.code==='Space' || e.code==='Enter' || e.code==='ArrowDown'){ e.preventDefault(); tap(); return; }
+    if (e.code==='Backspace'){ e.preventDefault(); undoTap(); return; }
+    if (e.code==='Escape'){ endSync(); return; }
+  }
+  if (typing) return;
+  if (e.code==='Space'){ e.preventDefault(); togglePlay(); }
+  if (e.code==='ArrowLeft'){ vid.currentTime = Math.max(0, vid.currentTime-2); }
+  if (e.code==='ArrowRight'){ vid.currentTime = Math.min(vid.duration||0, vid.currentTime+2); }
+});
+
+function currentLyric(t){
+  const tl = t + S.lyricOffset;
+  let idx = -1;
+  for (let i=0;i<S.lines.length;i++){ const s=S.lines[i].start; if (s!=null && s<=tl) idx=i; }
+  if (idx < 0) return null;
+  const line = S.lines[idx];
+  let end = null, next = null;
+  for (let j=idx+1;j<S.lines.length;j++){ if (S.lines[j].start!=null){ end = S.lines[j].start; next = S.lines[j]; break; } }
+  if (end == null){ end = line.start + S.maxLine; next = S.lines[idx+1] || null; }
+  end = Math.min(end, line.start + S.maxLine);
+  if (tl >= end) return null;
+  return { idx, line, start: line.start, end, tl, next };
+}
+
+// ---------- drawing helpers ----------
+const clamp = (v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const easeOut = x=>1-Math.pow(1-x,3);
+const easeOutBack = x=>{ const c1=1.70158,c3=c1+1; return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2); };
+const NO_HEAD = /^[、。，．,.!?！？ーっゃゅょぁぃぅぇぉッャュョァィゥェォ」』）)\]・…]/;
+function wrapText(text, maxW){
+  const m = t => ctx.measureText(t).width;
+  // 空白区切りの塊はなるべく崩さず、収まらない塊だけ1文字ずつに分ける
+  const tokens = [];
+  text.split(/\s+/).filter(Boolean).forEach(w=>{
+    if (m(w) <= maxW) tokens.push({ t:w, sp:tokens.length > 0 });
+    else [...w].forEach((c,i)=>tokens.push({ t:c, sp:i === 0 && tokens.length > 0 }));
+  });
+  const greedy = limit => {
+    const rows = []; let cur = '';
+    for (const tk of tokens){
+      const piece = (cur && tk.sp ? ' ' : '') + tk.t;
+      if (cur && m(cur + piece) > limit){
+        if (!tk.sp && NO_HEAD.test(tk.t) && m(cur + piece) <= maxW){ cur += piece; continue; } // 行頭禁則
+        rows.push(cur); cur = tk.t;
+      } else cur += piece;
+    }
+    if (cur) rows.push(cur);
+    return rows;
+  };
+  // 行数を増やさない範囲で幅を詰め、各行の長さを揃える
+  const n = greedy(maxW).length;
+  if (n <= 1) return greedy(maxW);
+  let lo = m(text)/n*0.9, hi = maxW;
+  for (let k=0; k<14; k++){ const mid = (lo+hi)/2; if (greedy(mid).length <= n) hi = mid; else lo = mid; }
+  return greedy(hi);
+}
+function styledText(text, x, y, o){
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  if (o.stroke > 0){ ctx.lineWidth = o.stroke*2; ctx.strokeStyle = o.strokeColor; ctx.strokeText(text, x, y); }
+  if (o.glow > 0){ ctx.shadowColor = o.glowColor; ctx.shadowBlur = o.glow; }
+  ctx.fillStyle = o.fill; ctx.fillText(text, x, y);
+  if (o.glow > 0 && o.stroke === 0){ ctx.fillText(text, x, y); }
+  ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+}
+// 映像の切り出し元(sx..)と描画先(x..)を返す
+function videoRect(){
+  const vw = vid.videoWidth, vh = vid.videoHeight;
+  if (S.mode === 'cover'){
+    const sc = Math.max(W/vw, H/vh) * S.zoom, dw = vw*sc, dh = vh*sc;
+    const cx = W/2 + S.posX*W, cy = H/2 + (S.posY-0.5)*H;
+    return { sx:0, sy:0, sw:vw, sh:vh, x: cx-dw/2, y: cy-dh/2, w: dw, h: dh };
+  }
+  const ar = S.cardAR === 'orig' ? vw/vh : S.cardAR.split(':').reduce((a,b)=>a/b);
+  const w = W*S.cardW, h = w/ar;
+  let sw = Math.min(vw, vh*ar) / Math.max(1, S.zoom), sh = sw/ar;
+  const sx = clamp((vw-sw)/2 + S.posX*vw, 0, vw-sw), sy = clamp((vh-sh)/2 + S.panY*vh, 0, vh-sh);
+  return { sx, sy, sw, sh, x: W/2-w/2, y: H*S.posY-h/2, w, h };
+}
+function drawFrame(img, r, k=1){ ctx.drawImage(img, r.sx*k, r.sy*k, r.sw*k, r.sh*k, r.x, r.y, r.w, r.h); }
+let videoBlur = 0, lyricEnv = 0, chorusEnv = 0, lastFrameT = 0;
+function filterStr(){ return `brightness(${S.brightness}) contrast(${S.contrast}) saturate(${S.saturate})` + (videoBlur > 0.3 ? ` blur(${videoBlur.toFixed(1)}px)` : ''); }
+
+// background
+const small = document.createElement('canvas'); small.width = 108; small.height = 192; const sctx = small.getContext('2d');
+function drawCover(c, img, iw, ih, w, h){ const s = Math.max(w/iw, h/ih); c.drawImage(img, (w-iw*s)/2, (h-ih*s)/2, iw*s, ih*s); }
+function drawBackground(now){
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+  if (S.bgType === 'blur' && videoReady){
+    sctx.filter = `blur(${S.bgBlur/10}px) saturate(1.2)`;
+    drawCover(sctx, vid, vid.videoWidth, vid.videoHeight, 108, 192);
+    sctx.filter = 'none';
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(small, -40, -40, W+80, H+80);
+  } else if (S.bgType === 'image' && bgImg){
+    drawCover(ctx, bgImg, bgImg.width, bgImg.height, W, H);
+  } else if (S.bgType === 'color'){
+    ctx.fillStyle = S.bgColor1; ctx.fillRect(0,0,W,H);
+  } else {
+    const a = (S.bgAngle + (S.bgAnimate ? now/120 : 0)) * Math.PI/180;
+    const r = Math.hypot(W,H)/2, dx = Math.cos(a)*r, dy = Math.sin(a)*r;
+    const g = ctx.createLinearGradient(W/2-dx, H/2-dy, W/2+dx, H/2+dy);
+    g.addColorStop(0, S.bgColor1); g.addColorStop(1, S.bgColor2);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    if (S.bgAnimate){ // やわらかい光の玉
+      for (let i=0;i<3;i++){
+        const t = now/1000*(0.15+i*0.07) + i*2;
+        const x = W*(0.5+0.4*Math.sin(t*1.3+i)), y = H*(0.5+0.4*Math.cos(t+i*1.7));
+        const rg = ctx.createRadialGradient(x,y,0,x,y,W*0.6);
+        rg.addColorStop(0, i%2 ? S.bgColor1+'66' : S.bgColor2+'66'); rg.addColorStop(1, '#0000');
+        ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+      }
+    }
+  }
+  if (S.bgDim > 0){ ctx.fillStyle = `rgba(0,0,0,${S.bgDim})`; ctx.fillRect(0,0,W,H); }
+}
+
+let pulse = 0;
+function drawVideo(src){
+  const r = videoRect();
+  if (pulse > 0){ const k = 1 + pulse, cx = r.x + r.w/2, cy = r.y + r.h/2; r.w *= k; r.h *= k; r.x = cx - r.w/2; r.y = cy - r.h/2; }
+  if (S.mode === 'card'){
+    const rad = Math.min(S.radius, r.w/2, r.h/2);
+    if (S.shadow){
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 70; ctx.shadowOffsetY = 24;
+      ctx.beginPath(); ctx.roundRect(r.x, r.y, r.w, r.h, rad); ctx.fillStyle = '#000'; ctx.fill(); ctx.restore();
+    }
+    ctx.save(); ctx.beginPath(); ctx.roundRect(r.x, r.y, r.w, r.h, rad); ctx.clip();
+    ctx.filter = filterStr(); drawFrame(src, r); ctx.restore();
+  } else {
+    ctx.save(); ctx.filter = filterStr(); drawFrame(src, r); ctx.restore();
+  }
+}
+
+// look
+const grainTiles = Array.from({length:4}, ()=>{
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  const d = g.createImageData(256,256);
+  for (let i=0;i<d.data.length;i+=4){ const v = Math.random()*255; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255; }
+  g.putImageData(d,0,0); return c;
+});
+function drawLook(){
+  if (S.warmth){
+    ctx.save(); ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle = S.warmth > 0 ? `rgba(255,140,40,${S.warmth*0.6})` : `rgba(40,120,255,${-S.warmth*0.6})`;
+    ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  if (S.vignette > 0){
+    const g = ctx.createRadialGradient(W/2,H/2,H*0.25,W/2,H/2,H*0.72);
+    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,`rgba(0,0,0,${S.vignette})`);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  }
+  if (S.grain > 0){
+    ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = S.grain;
+    const p = ctx.createPattern(grainTiles[(Math.random()*4)|0], 'repeat');
+    p.setTransform(new DOMMatrix().translate(Math.random()*256, Math.random()*256));
+    ctx.fillStyle = p; ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+}
+
+// visualizer
+let freq, wave;
+function drawViz(){
+  if (S.viz === 'off' || !analyser) return;
+  const y0 = H*S.vizY;
+  ctx.save(); ctx.fillStyle = ctx.strokeStyle = S.vizColor; ctx.globalAlpha = 0.85;
+  if (S.viz === 'bars'){
+    freq = freq || new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(freq);
+    const n = 32, gap = 10, bw = (W*0.78 - gap*(n*2-1))/(n*2);
+    for (let i=0;i<n;i++){
+      const v = freq[2+Math.floor(i*1.6)]/255;
+      const h = Math.max(6, Math.pow(v,1.6)*140*S.vizH);
+      for (const side of [-1,1]){
+        const x = W/2 + side*(i*(bw+gap) + gap/2) - (side<0?bw:0);
+        ctx.beginPath(); ctx.roundRect(x, y0-h/2, bw, h, bw/2); ctx.fill();
+      }
+    }
+  } else {
+    wave = wave || new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(wave);
+    ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath();
+    const x0 = W*0.1, w = W*0.8;
+    for (let i=0;i<wave.length;i++){
+      const env = Math.sin(Math.PI*i/(wave.length-1));
+      const x = x0 + w*i/(wave.length-1), y = y0 + (wave[i]-128)/128*160*S.vizH*env;
+      i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// text layers
+function lyricStyle(){ return { fill:S.lyricColor, stroke:S.lyricStroke, strokeColor:S.lyricStrokeColor, glow:S.lyricGlow, glowColor:S.lyricGlowColor }; }
+// レイアウトごとの基本倍率
+const LAYOUT_SCALE = { bottom:1, full:1.75, left:1.45, vertical:1.4, stack:1.1 };
+function lyricLook(ch){
+  const lay = ch && S.chorusLayout !== 'same' ? S.chorusLayout : S.lyricLayout;
+  return {
+    lay,
+    anim: ch && S.chorusAnim !== 'same' ? S.chorusAnim : S.lyricAnim,
+    font: ch && S.chorusFont !== 'same' ? S.chorusFont : S.lyricFont,
+    weight: S.lyricWeight,
+    size: S.lyricSize * (LAYOUT_SCALE[lay] || 1) * (ch ? S.chorusSize : 1),
+    st: ch ? { fill:S.chorusColor, stroke:S.chorusStroke, strokeColor:S.chorusStrokeColor, glow:S.chorusGlow, glowColor:S.chorusGlowColor } : lyricStyle(),
+  };
+}
+function setFont(lk, size){ ctx.font = `${lk.weight} ${Math.round(size)}px "${lk.font}"`; }
+
+// --- 文字（グリフ）の配置 ---
+function layoutH(text, lk, size, maxW){
+  setFont(lk, size);
+  const rows = wrapText(text, maxW), lh = size*1.32, totalH = rows.length*lh;
+  const left = lk.lay === 'left' || lk.lay === 'stack';
+  const glyphs = []; let maxRW = 0;
+  rows.forEach((r, ri)=>{
+    const arr = [...r], ws = arr.map(c=>ctx.measureText(c).width), rw = ws.reduce((x,y)=>x+y, 0);
+    maxRW = Math.max(maxRW, rw);
+    let x = left ? 0 : -rw/2; const y = -totalH/2 + lh/2 + ri*lh;
+    arr.forEach((c,k)=>{ glyphs.push({ c, x: x + ws[k]/2, y, w: ws[k] }); x += ws[k]; });
+  });
+  return { glyphs, size, w: maxRW, h: totalH, rows: rows.length, vertical: false, left };
+}
+const V_ROT = /[ー－—―〜～…‥()（）「」『』【】〈〉《》\[\]<>=A-Za-z0-9]/;  // 縦書きで横倒しにする文字
+const V_PUNCT = /[、。，．,.]/;
+function layoutV(text, lk, size){
+  let L;
+  for (let tries=0; tries<8; tries++){
+    setFont(lk, size);
+    const step = size*1.06, gap = size*1.5, maxH = H*0.6;
+    const cols = [[]];
+    for (const c of [...text]){
+      if (/\s/.test(c)){ if (cols[cols.length-1].length) cols.push([]); continue; } // 空白で改行
+      if ((cols[cols.length-1].length + 1)*step > maxH) cols.push([]);
+      cols[cols.length-1].push(c);
+    }
+    if (!cols[cols.length-1].length) cols.pop();
+    const n = cols.length, totalW = (n-1)*gap, maxLen = Math.max(...cols.map(c=>c.length))*step;
+    const glyphs = [];
+    cols.forEach((col, j)=>{
+      const x = totalW/2 - j*gap;
+      col.forEach((c, i)=>{
+        const g = { c, x, y: -maxLen/2 + step*i + step/2, w: size, rot: V_ROT.test(c) };
+        if (V_PUNCT.test(c)){ g.x += size*0.36; g.y -= size*0.36; }
+        glyphs.push(g);
+      });
+    });
+    L = { glyphs, size, w: totalW + size, h: maxLen, rows: n, vertical: true };
+    if (n <= 4 || size < 36) break;
+    size *= 0.88;
+  }
+  return L;
+}
+const layoutCache = new Map();
+function layoutLine(text, lk){
+  const key = [text, lk.lay, lk.font, lk.weight, lk.size].join('|');
+  if (layoutCache.has(key)) return layoutCache.get(key);
+  let L, size = lk.size;
+  if (lk.lay === 'vertical') L = layoutV(text, lk, size);
+  else {
+    const maxW = lk.lay === 'bottom' ? W*0.86 : W*0.84, maxRows = lk.lay === 'bottom' ? 2 : 3;
+    const words = text.split(/\s+/).filter(Boolean);
+    for (let k=0; k<8 && size > lk.size*0.7; k++){ setFont(lk, size); if (words.every(w=>ctx.measureText(w).width <= maxW)) break; size *= 0.93; }
+    for (let k=0; k<8; k++){ L = layoutH(text, lk, size, maxW); if (L.rows <= maxRows || size < 36) break; size *= 0.88; }
+  }
+  if (layoutCache.size > 300) layoutCache.clear();
+  layoutCache.set(key, L);
+  return L;
+}
+
+// --- 1文字ごとのアニメーション ---
+const hash = n => { const x = Math.sin(n*127.1)*43758.5453; return x - Math.floor(x); };
+function glyphTr(anim, i, n, local, dur, size){
+  const tr = { a:1, dy:0, s:1, blur:0, clip:false, show:true, xs:1 };
+  const step = Math.min(0.06, 0.75/Math.max(1, n));
+  switch (anim){
+    case 'fade': { const e = easeOut(clamp(local/0.5)); tr.a = e; tr.dy = (1-e)*size*0.25; break; }
+    case 'stagger': { const e = easeOut(clamp((local - i*step)/0.5)); tr.a = e; tr.dy = (1-e)*size*0.3; break; }
+    case 'rise': { const e = easeOut(clamp((local - i*step*0.8)/0.55)); tr.clip = true; tr.dy = (1-e)*size*1.15; break; }
+    case 'blur': { const e = easeOut(clamp((local - i*step*0.7)/0.65)); tr.a = e; tr.blur = (1-e)*size*0.22; tr.s = 1 + (1-e)*0.12; break; }
+    case 'spread': { const e = easeOut(clamp(local/1.1)); tr.a = clamp(local/0.6); tr.xs = 0.78 + 0.22*e + 0.05*clamp(local/Math.max(dur,1)); tr.blur = (1-e)*4; break; }
+    case 'zoom': { const e = easeOut(clamp(local/0.55)); tr.a = e; tr.xs = 1 + (1-e)*0.45; tr.ys = tr.xs; tr.s = tr.xs; tr.blur = (1-e)*size*0.25; break; }
+    case 'wipe': { const p = clamp(local/clamp(dur*0.6, 0.5, 1.4)); tr.a = clamp((p*(n+4) - i)/4); tr.blur = (1-tr.a)*5; tr.dy = (1-tr.a)*size*0.08; break; }
+    case 'type': { const speed = n / clamp(dur*0.5, 0.6, 2.5); tr.show = i < Math.floor(local*speed) + 1; break; }
+    case 'karaoke': tr.a = clamp(local/0.15); break;
+    case 'neon': { const l = local - i*step*0.5; if (l < 0) tr.a = 0; else if (l < 0.7) tr.a = hash(i*31 + Math.floor(l*16)) < 0.35 + l ? 1 : 0.12; break; }
+    case 'pop': { const p = clamp((local - i*step)/0.35); tr.s = 0.3 + 0.7*easeOutBack(p); tr.a = clamp(p*3); break; }
+    case 'bounce': { const p = clamp((local - i*0.045)/0.3); tr.a = p > 0 ? 1 : 0; tr.s = 0.4 + 0.6*easeOutBack(p); tr.dy = -(1-easeOut(p))*size*0.6 + Math.sin(local*5 + i*0.7)*size*0.06; break; }
+  }
+  if (tr.ys == null) tr.ys = 1;
+  return tr;
+}
+function drawGlyph(g, tr, st, ox, oy, size, vertical, hi){
+  if (!tr.show || tr.a <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha *= tr.a;
+  const x = ox + g.x*tr.xs, y = oy + g.y*tr.ys;
+  if (tr.clip){ ctx.beginPath(); ctx.rect(x - g.w/2 - size*0.25, y - size*0.72, g.w + size*0.5, size*1.44); ctx.clip(); }
+  ctx.translate(x, y + tr.dy);
+  if (g.rot) ctx.rotate(Math.PI/2);
+  if (tr.s !== 1) ctx.scale(tr.s, tr.s);
+  if (tr.blur > 0.4) ctx.filter = `blur(${tr.blur.toFixed(1)}px)`;
+  styledText(g.c, 0, 0, st);
+  if (hi > 0){ // カラオケの色づき（縦書きは上から）
+    ctx.beginPath();
+    if (vertical && !g.rot) ctx.rect(-size, -size*0.7, size*2, size*1.4*hi);
+    else ctx.rect(-g.w/2 - 2, -size, (g.w + 4)*hi, size*2);
+    ctx.clip();
+    styledText(g.c, 0, 0, { ...st, fill:S.lyricHi, glow:Math.max(st.glow, 18), glowColor:S.lyricHi+'99' });
+  }
+  ctx.restore();
+}
+function drawGlyphLine(G, lk, ox, oy, local, dur, o, k=1, baseA=1, animate=true){
+  setFont(lk, G.size);
+  const n = G.glyphs.length;
+  const kp = animate && lk.anim === 'karaoke' ? clamp(local/(dur*0.85))*n : -1;
+  G.glyphs.forEach((g, i)=>{
+    const tr = animate ? glyphTr(lk.anim, i, n, local, dur, G.size) : { a:1, dy:0, s:1, blur:0, clip:false, show:true, xs:1, ys:1 };
+    switch (S.lyricOut){
+      case 'fade': tr.a *= o; break;
+      case 'blur': tr.a *= o; tr.blur += (1-o)*G.size*0.2; break;
+      case 'up': tr.a *= o; tr.dy -= (1-o)*G.size*0.5; break;
+    }
+    tr.a *= baseA; tr.xs *= k; tr.ys *= k; tr.s *= k;
+    drawGlyph(g, tr, lk.st, ox, oy, G.size, G.vertical, kp < 0 ? 0 : clamp(kp - i));
+  });
+}
+
+function drawLyrics(t){
+  const L = currentLyric(t); if (!L || !L.line.text) return;
+  const ch = S.chorusOn && !!L.line.chorus;
+  const lk = lyricLook(ch);
+  const local = L.tl - L.start, dur = L.end - L.start;
+  const o = S.lyricOut === 'none' ? 1 : clamp((L.end - L.tl)/0.35);
+  if (lk.lay === 'stack') return drawStack(L, local, dur, o);
+  const G = layoutLine(L.line.text, lk);
+  let ox = W/2, oy = H*S.lyricY;
+  if (lk.lay === 'full' || lk.lay === 'vertical') oy = H*S.fullY;
+  else if (lk.lay === 'left') ox = W*0.08;
+  if (ch) oy += H*S.chorusYOffset;
+  if (ch && S.chorusSparkle) drawSparkles(oy, G.h, local, o);
+  if (S.lyricBox && (lk.lay === 'bottom' || lk.lay === 'left')){
+    ctx.save(); ctx.globalAlpha = clamp(local/0.3)*o;
+    ctx.fillStyle = isLight(lk.st.fill) ? 'rgba(0,0,0,.45)' : 'rgba(255,255,255,.75)';
+    const bx = lk.lay === 'left' ? ox - 32 : ox - G.w/2 - 36;
+    ctx.beginPath(); ctx.roundRect(bx, oy - G.h/2 - 22, G.w + 72, G.h + 44, 24); ctx.fill(); ctx.restore();
+  }
+  drawGlyphLine(G, lk, ox, oy, local, dur, o);
+  if (S.showNext && lk.lay === 'bottom' && L.next && L.next.text){
+    ctx.save(); ctx.globalAlpha = 0.45*o;
+    ctx.font = `${S.lyricWeight} ${Math.round(S.lyricSize*0.62)}px "${S.lyricFont}"`;
+    const nr = wrapText(L.next.text, W*0.86);
+    styledText(nr[0] + (nr.length > 1 ? '…' : ''), W/2, oy + G.h/2 + S.lyricSize*0.75, { ...lyricStyle(), stroke:Math.round(S.lyricStroke*0.6) });
+    ctx.restore();
+  }
+}
+// 流れる歌詞：前後の行を薄く表示し、行が変わるとスクロール
+function drawStack(L, local, dur, o){
+  const ox = W*0.08, anchor = H*S.lyricY, gap = S.lyricSize*0.55, SMALL = 0.8;
+  const items = [];
+  for (let j = L.idx-2; j <= L.idx+2; j++){
+    const ln = S.lines[j]; if (!ln || !ln.text) continue;
+    const lk = lyricLook(S.chorusOn && !!ln.chorus); lk.lay = 'stack';
+    items.push({ j, lk, G: layoutLine(ln.text, lk) });
+  }
+  const ci = items.findIndex(it=>it.j === L.idx); if (ci < 0) return;
+  const e = easeOut(clamp(local/0.5));
+  const scaleOf = it => it.j === L.idx ? SMALL + (1-SMALL)*e : (ci > 0 && it === items[ci-1]) ? 1 - (1-SMALL)*e : SMALL;
+  const ys = new Array(items.length); ys[ci] = 0;
+  for (let k=ci-1; k>=0; k--) ys[k] = ys[k+1] - (items[k+1].G.h*scaleOf(items[k+1])/2 + gap + items[k].G.h*scaleOf(items[k])/2);
+  for (let k=ci+1; k<items.length; k++) ys[k] = ys[k-1] + (items[k-1].G.h*scaleOf(items[k-1])/2 + gap + items[k].G.h*scaleOf(items[k])/2);
+  const shift = ci > 0 ? (1-e)*(ys[ci] - ys[ci-1]) : (1-e)*S.lyricSize*0.5;
+  items.forEach((it, k)=>{
+    const d = Math.abs(k - ci);
+    let a = k === ci ? 0.3 + 0.7*e : (k === ci-1 ? 1 - 0.7*e : d === 1 ? 0.3 : 0.12);
+    ctx.save(); ctx.globalAlpha = o;
+    drawGlyphLine(it.G, it.lk, ox, anchor + ys[k] + shift, local, dur, 1, scaleOf(it), a, k === ci);
+    ctx.restore();
+  });
+}
+function drawSparkles(cy, h, local, alpha){
+  ctx.save();
+  for (let i=0;i<20;i++){
+    const rx = Math.sin(i*91.7)*0.5+0.5, ry = Math.sin(i*47.3)*0.5+0.5;
+    const tw = Math.sin(local*3 + i*1.9)*0.5+0.5;
+    const x = W*(0.06 + rx*0.88), y = cy + (ry-0.5)*(h + 300) - local*14*(0.5+rx);
+    const r = (3 + (i%4)*2) * (0.4 + tw*0.8);
+    ctx.globalAlpha = alpha * tw * clamp(local/0.4) * 0.8;
+    ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+// サビ中なら {local, first(=サビ頭か)} を返す
+function chorusState(t){
+  if (!S.chorusOn) return null;
+  const L = currentLyric(t); if (!L || !L.line.chorus || !L.line.text) return null;
+  let prev = null; for (let j=L.idx-1;j>=0;j--) if (S.lines[j].start!=null){ prev = S.lines[j]; break; }
+  return { local: L.tl - L.start, first: !prev || !prev.chorus };
+}
+function isLight(hex){ const n=parseInt(hex.slice(1),16); return ((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000 > 140; }
+
+function drawTitle(t){
+  if (S.titleMode === 'off' || (!S.title && !S.artist)) return;
+  let a = 1; const ts = trim()[0];
+  if (S.titleMode === 'intro'){ const l = t - ts; if (l > 5) return; a = clamp(l/0.5)*clamp((5-l)/0.6); }
+  ctx.save(); ctx.globalAlpha = a;
+  const y = H*S.titleY; const st = { fill:S.titleColor, stroke:0, glow:20, glowColor:'rgba(0,0,0,.5)' };
+  if (S.title){ ctx.font = `700 ${S.titleSize}px "${S.titleFont}"`; styledText(S.title, W/2, y, st); }
+  if (S.artist){ ctx.font = `400 ${Math.round(S.titleSize*0.55)}px "${S.titleFont}"`; ctx.globalAlpha = a*0.85; styledText(S.artist, W/2, y + (S.title ? S.titleSize*0.95 : 0), st); }
+  ctx.restore();
+}
+function drawHook(t){
+  if (!S.hook) return;
+  const l = t - trim()[0]; if (l < 0 || l > S.hookDur) return;
+  const p = clamp(l/0.35), out = clamp((S.hookDur - l)/0.3);
+  ctx.save(); ctx.globalAlpha = out; ctx.translate(W/2, H*S.hookY);
+  const s = 0.5 + 0.5*easeOutBack(p); ctx.scale(s, s); ctx.rotate(-0.04);
+  ctx.font = `900 ${S.hookSize}px "Dela Gothic One","${S.titleFont}"`;
+  const rows = wrapText(S.hook, W*0.85), lh = S.hookSize*1.2;
+  rows.forEach((r,i)=>styledText(r, 0, (i-(rows.length-1)/2)*lh, { fill:S.hookColor, stroke:10, strokeColor:'#111', glow:30, glowColor:'rgba(0,0,0,.6)' }));
+  ctx.restore();
+}
+function drawProgress(t){
+  if (!S.progress || !videoReady) return;
+  const [ts,te] = trim(); const p = clamp((t-ts)/Math.max(0.01, te-ts));
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(0, H-12, W, 12);
+  ctx.fillStyle = S.progressColor; ctx.fillRect(0, H-12, W*p, 12);
+}
+
+// ---------- segmentation (β) ----------
+let segmenter = null, segLoading = false, lastSegT = -1, lastTs = 0;
+const maskCv = document.createElement('canvas'), mctx = maskCv.getContext('2d');
+const personCv = document.createElement('canvas'), pctx = personCv.getContext('2d');
+let maskImg = null;
+async function initSeg(){
+  if (segmenter || segLoading) return; segLoading = true;
+  status('人物切り抜きモデルを読み込み中…');
+  try {
+    const V = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+    const { FilesetResolver, ImageSegmenter } = await import(V + '/vision_bundle.mjs');
+    const fs = await FilesetResolver.forVisionTasks(V + '/wasm');
+    segmenter = await ImageSegmenter.createFromOptions(fs, {
+      baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite', delegate: 'GPU' },
+      runningMode: 'VIDEO', outputCategoryMask: false, outputConfidenceMasks: true,
+    });
+    status('人物切り抜き: 準備完了（ギターが欠ける場合はオフ推奨）');
+  } catch(e){ console.error(e); status('人物切り抜きモデルの読み込みに失敗しました'); S.segment = false; syncControls(); }
+  segLoading = false;
+}
+function updatePerson(){
+  if (!segmenter || vid.readyState < 2) return false;
+  if (vid.currentTime !== lastSegT){
+    lastSegT = vid.currentTime;
+    let ts = performance.now(); if (ts <= lastTs) ts = lastTs + 1; lastTs = ts;
+    segmenter.segmentForVideo(vid, ts, res=>{
+      const ms = res.confidenceMasks; if (!ms || !ms.length) return;
+      const m = ms[ms.length > 1 ? 1 : 0];
+      const w = m.width, h = m.height, data = m.getAsFloat32Array();
+      if (!maskImg || maskImg.width !== w || maskImg.height !== h){ maskCv.width = w; maskCv.height = h; maskImg = mctx.createImageData(w,h); }
+      const d = maskImg.data;
+      for (let i=0;i<data.length;i++){ let v = data[i]; if (S.segInvert) v = 1-v; d[i*4+3] = clamp((v-0.35)/0.3)*255; }
+      mctx.putImageData(maskImg, 0, 0);
+    });
+    const sc = Math.min(1, 1280/Math.max(vid.videoWidth, vid.videoHeight));
+    const pw = Math.round(vid.videoWidth*sc), ph = Math.round(vid.videoHeight*sc);
+    if (personCv.width !== pw){ personCv.width = pw; personCv.height = ph; }
+    pctx.globalCompositeOperation = 'copy'; pctx.drawImage(vid, 0, 0, pw, ph);
+    pctx.globalCompositeOperation = 'destination-in'; pctx.filter = 'blur(3px)'; pctx.drawImage(maskCv, 0, 0, pw, ph);
+    pctx.filter = 'none'; pctx.globalCompositeOperation = 'source-over';
+  }
+  return true;
+}
+
+// ---------- main loop ----------
+let exporting = false, rec = null;
+function render(now){
+  const t = vid.currentTime || 0;
+  const [ts, te] = trim();
+  if (videoReady && !vid.paused && !exporting && syncIdx < 0 && t >= te - 0.03){ vid.currentTime = ts; }
+  const CS = chorusState(t);
+  { // 歌詞・サビに合わせて映像を暗く/ぼかす（なめらかに追従）
+    const Ln = currentLyric(t), showing = !!(Ln && Ln.line.text);
+    const dt = Math.min(0.1, Math.max(0, (now - lastFrameT)/1000)); lastFrameT = now;
+    const k = 1 - Math.exp(-dt/0.22);
+    lyricEnv += ((showing ? 1 : 0) - lyricEnv)*k; chorusEnv += ((CS ? 1 : 0) - chorusEnv)*k;
+    videoBlur = S.chorusBlur*chorusEnv;
+  }
+  pulse = CS && S.chorusPulse ? 0.035 * Math.max(0, 1 - CS.local/0.35) : 0;
+  drawBackground(now);
+  if (videoReady){
+    if (S.segment && updatePerson()){
+      const r = videoRect();
+      ctx.save(); ctx.filter = filterStr(); drawFrame(personCv, r, personCv.width/vid.videoWidth); ctx.restore();
+    } else drawVideo(vid);
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = '700 44px "Zen Maru Gothic"';
+    styledText('動画を読み込んでください', W/2, H/2, {fill:'rgba(255,255,255,.7)',stroke:0,glow:0});
+  }
+  drawLook();
+  { const dim = Math.min(0.88, S.lyricBackdrop*lyricEnv + S.chorusBackdrop*chorusEnv);
+    if (dim > 0.005){ ctx.fillStyle = `rgba(0,0,0,${dim})`; ctx.fillRect(0,0,W,H); } }
+  if (CS && CS.first && S.chorusFlash && CS.local < 0.45){
+    ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(255,255,255,${0.55*(1-CS.local/0.45)})`; ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  drawViz();
+  drawTitle(t);
+  drawHook(t);
+  drawLyrics(t);
+  drawProgress(t);
+  if (S.fadeIO && videoReady){
+    const f = clamp(Math.min((t-ts)/0.6, (te-t)/0.6));
+    if (f < 1){ ctx.fillStyle = `rgba(0,0,0,${1-f})`; ctx.fillRect(0,0,W,H); }
+  }
+  // UI
+  if (videoReady){
+    if (document.activeElement !== $('#seek')) $('#seek').value = t;
+    $('#time').textContent = `${fmt(t)} / ${fmt(vid.duration)}`;
+    const L = currentLyric(t);
+    document.querySelectorAll('.lrow').forEach(r=>{ r.classList.toggle('cur', L && +r.dataset.i === L.idx); r.classList.toggle('next', +r.dataset.i === syncIdx); });
+  }
+  if (exporting){
+    $('#exportProg').value = clamp((t-ts)/(te-ts));
+    if (t >= te - 0.02 || vid.ended) stopExport();
+  }
+  requestAnimationFrame(render);
+}
+
+// ---------- export ----------
+function pickMime(){
+  const c = ['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm'];
+  return c.find(m=>window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+}
+async function startExport(){
+  if (!videoReady){ alert('先に動画を読み込んでください'); return; }
+  if (syncIdx >= 0) endSync();
+  const mime = pickMime(); if (!mime){ alert('このブラウザは動画の書き出しに対応していません'); return; }
+  ensureAudio(); await audioCtx.resume();
+  const [ts] = trim();
+  vid.pause(); vid.currentTime = ts;
+  await new Promise(r=>vid.addEventListener('seeked', r, {once:true}));
+  const stream = cv.captureStream(S.fps);
+  recDest.stream.getAudioTracks().forEach(tr=>stream.addTrack(tr));
+  const chunks = [];
+  rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: S.bitrate*1e6, audioBitsPerSecond: 192000 });
+  rec.ondataavailable = e=>{ if (e.data.size) chunks.push(e.data); };
+  rec.onstop = ()=>{
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type: mime.split(';')[0] });
+    const url = URL.createObjectURL(blob);
+    const name = `reel_${(S.title||'hikigatari').replace(/[\\/:*?"<>|]/g,'')}_${new Date().toISOString().slice(0,16).replace(/[-:T]/g,'')}.${ext}`;
+    const a = document.createElement('a'); a.href = url; a.download = name; a.textContent = `⬇ ${name}（${(blob.size/1e6).toFixed(1)}MB）`;
+    $('#dl').innerHTML = ''; $('#dl').append(a);
+    if (ext === 'webm') $('#dl').insertAdjacentHTML('beforeend','<br>※WebM形式です。Instagramに上げる前にMP4へ変換するか、Chrome最新版 / Safari をお使いください。');
+    a.click();
+    status('書き出し完了！');
+  };
+  if (S.muteMonitor) monitor.gain.value = 0;
+  exporting = true; $('#exportBtn').disabled = true; $('#exportBtn').textContent = '書き出し中…';
+  $('#exportProg').style.display = 'block'; $('#dl').textContent = '';
+  status('書き出し中…このタブを表示したままお待ちください');
+  rec.start(1000);
+  await vid.play();
+}
+function stopExport(){
+  if (!exporting) return;
+  exporting = false; vid.pause();
+  if (rec && rec.state !== 'inactive') rec.stop();
+  monitor.gain.value = 1;
+  $('#exportBtn').disabled = false; $('#exportBtn').textContent = '🎬 動画を書き出す';
+}
+$('#exportBtn').onclick = startExport;
+$('#coverBtn').onclick = ()=>cv.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='cover.png'; a.click(); }, 'image/png');
+
+// ---------- init ----------
+buildControls(); syncControls(); loadFonts();
+if (S.segment) initSeg();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
