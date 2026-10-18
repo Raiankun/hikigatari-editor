@@ -115,8 +115,8 @@ textarea{width:100%;min-height:150px;resize:vertical;line-height:1.6}
 
     <div class="panel" data-panel="lyrics">
       <h4>① 歌詞を貼り付け（1行＝1表示）</h4>
-      <textarea id="lyricsText" placeholder="歌詞を1行ずつ入力&#10;&#10;空行 → 間奏などで歌詞を消すタイミング&#10;★から始まる行 → サビ（目立つ表示）"></textarea>
-      <p class="hint">サビの行は先頭に <b>★</b> を付けるか、下の一覧の ★ ボタンで指定できます。</p>
+      <textarea id="lyricsText" placeholder="歌詞を1行ずつ入力&#10;&#10;空行 → 間奏などで歌詞を消すタイミング&#10;★から始まる行 → サビ（目立つ表示）&#10;行末の（ ）→ 訳詞として改行表示"></textarea>
+      <p class="hint">サビの行は先頭に <b>★</b> を付けるか、下の一覧の ★ ボタンで指定できます。<br>英詞の訳は行末に <b>（ ）</b> で書くと、改行して小さく表示されます。<br>例：<code>Stay with me tonight（今夜はそばにいて）</code></p>
       <div class="btns"><button id="applyLyrics">歌詞を反映</button></div>
       <h4>② タイミングを合わせる</h4>
       <p class="hint">「タップ同期」を押すと最初から再生されます。各行を<b>歌い始めた瞬間</b>に <b>スペースキー</b>（またはTAPボタン）を押してください。<br>間違えたら <b>Backspace</b> で1行戻ります。終わったら Esc。</p>
@@ -182,7 +182,8 @@ const DEF = {
   lines:[], lyricLayout:'bottom', lyricAnim:'blur', lyricOut:'blur',
   lyricFont:'Shippori Mincho', lyricWeight:'700', lyricSize:58, lyricColor:'#ffffff', lyricHi:'#ffd54a',
   lyricStroke:0, lyricStrokeColor:'#000000', lyricGlow:22, lyricGlowColor:'#000000', lyricBox:false, lyricBackdrop:0.1,
-  lyricY:0.74, fullY:0.5, showNext:false, lyricOffset:0, maxLine:10,
+  lyricY:0.74, fullY:0.5,
+  transOn:true, transSize:0.5, transFont:'same', transWeight:'400', transColor:'#ffffff', transOpacity:0.85, showNext:false, lyricOffset:0, maxLine:10,
   chorusOn:true, chorusLayout:'full', chorusAnim:'rise', chorusFont:'same', chorusSize:1.1, chorusYOffset:0,
   chorusColor:'#ffffff', chorusStroke:0, chorusStrokeColor:'#000000', chorusGlow:28, chorusGlowColor:'#000000',
   chorusBackdrop:0.4, chorusBlur:6, chorusFlash:false, chorusPulse:false, chorusSparkle:false,
@@ -243,6 +244,13 @@ const PANELS = {
     {k:'showNext',l:'次の行も表示（下）',t:'checkbox'},
     {k:'lyricOffset',l:'全体のずれ補正(秒)',t:'range',min:-2,max:2,s:0.05},
     {k:'maxLine',l:'1行の最大表示秒',t:'range',min:3,max:30,s:0.5},
+    {h:'訳詞（行末の（ ）内を下の行に）'},
+    {k:'transOn',l:'訳詞を改行して表示',t:'checkbox'},
+    {k:'transSize',l:'訳詞のサイズ（本文比）',t:'range',min:0.3,max:1,s:0.05},
+    {k:'transFont',l:'訳詞のフォント',t:'select',o:[['same','本文と同じ'],...FONT_OPTS]},
+    {k:'transWeight',l:'訳詞の太さ',t:'select',o:[['400','普通'],['700','太字'],['900','極太']]},
+    {k:'transColor',l:'訳詞の色',t:'color'},
+    {k:'transOpacity',l:'訳詞の濃さ',t:'range',min:0.3,max:1,s:0.05},
     {h:'★ サビの行'},
     {k:'chorusOn',l:'サビを別の見せ方に',t:'checkbox'},
     {k:'chorusLayout',l:'レイアウト',t:'select',o:[['same','通常と同じ'],...LAYOUTS]},
@@ -399,7 +407,7 @@ function syncControls(){
   applyAudio(true);
 }
 function loadFonts(){
-  [S.lyricFont, S.titleFont, S.chorusFont, 'Dela Gothic One'].filter(f=>f!=='same').forEach(f=>{
+  [S.lyricFont, S.titleFont, S.chorusFont, S.transFont, 'Dela Gothic One'].filter(f=>f!=='same').forEach(f=>{
     ['400','700','900'].forEach(w=>document.fonts.load(`${w} 40px "${f}"`).catch(()=>{}));
   });
 }
@@ -834,7 +842,7 @@ function layoutH(text, lk, size, maxW){
     const arr = [...r], ws = arr.map(c=>ctx.measureText(c).width), rw = ws.reduce((x,y)=>x+y, 0);
     maxRW = Math.max(maxRW, rw);
     let x = left ? 0 : -rw/2; const y = -totalH/2 + lh/2 + ri*lh;
-    arr.forEach((c,k)=>{ glyphs.push({ c, x: x + ws[k]/2, y, w: ws[k] }); x += ws[k]; });
+    arr.forEach((c,k)=>{ glyphs.push({ c, x: x + ws[k]/2, y, w: ws[k], font: ctx.font, size }); x += ws[k]; });
   });
   return { glyphs, size, w: maxRW, h: totalH, rows: rows.length, vertical: false, left };
 }
@@ -857,7 +865,7 @@ function layoutV(text, lk, size){
     cols.forEach((col, j)=>{
       const x = totalW/2 - j*gap;
       col.forEach((c, i)=>{
-        const g = { c, x, y: -maxLen/2 + step*i + step/2, w: size, rot: V_ROT.test(c) };
+        const g = { c, x, y: -maxLen/2 + step*i + step/2, w: size, rot: V_ROT.test(c), font: ctx.font, size };
         if (V_PUNCT.test(c)){ g.x += size*0.36; g.y -= size*0.36; }
         glyphs.push(g);
       });
@@ -869,9 +877,34 @@ function layoutV(text, lk, size){
   return L;
 }
 const layoutCache = new Map();
+document.fonts.addEventListener('loadingdone', ()=>layoutCache.clear()); // フォント読込後に測り直す
+// 行末の（ ）内を訳詞として分ける：「I'm here（ここにいるよ）」→ main / trans
+function splitTrans(text){
+  if (!S.transOn) return { main: text, trans: '' };
+  const m = text.match(/^(.*?\S)\s*[（(]([^（）()]+)[）)]\s*$/);
+  return m ? { main: m[1], trans: m[2].trim() } : { main: text, trans: '' };
+}
 function layoutLine(text, lk){
-  const key = [text, lk.lay, lk.font, lk.weight, lk.size].join('|');
+  const key = [text, lk.lay, lk.font, lk.weight, lk.size, S.transOn, S.transSize, S.transFont, S.transWeight].join('|');
   if (layoutCache.has(key)) return layoutCache.get(key);
+  const { main, trans } = splitTrans(text);
+  let L = layoutMain(main, lk);
+  if (trans){
+    const tlk = { ...lk, font: S.transFont === 'same' ? lk.font : S.transFont, weight: S.transWeight, lay: lk.lay === 'vertical' ? 'full' : lk.lay };
+    const T = layoutH(trans, tlk, Math.max(26, L.size*S.transSize), lk.lay === 'bottom' ? W*0.86 : W*0.84);
+    const gap = L.size*0.32, total = L.h + gap + T.h;
+    const mc = -total/2 + L.h/2, tc = -total/2 + L.h + gap + T.h/2;
+    L.glyphs.forEach(g=>g.y += mc);
+    T.glyphs.forEach(g=>{ g.y += tc; g.tr = true; });
+    L = { ...L, glyphs: [...L.glyphs, ...T.glyphs], nMain: L.glyphs.length, w: Math.max(L.w, T.w), h: total };
+  }
+  if (layoutCache.size > 300) layoutCache.clear();
+  layoutCache.set(key, L);
+  return L;
+}
+function layoutMain(text, lk){
+  // 縦書きでも、日本語を含まない行（英詞など）は横書きで表示
+  if (lk.lay === 'vertical' && !/[\u3040-\u30ff\u3400-\u9fff]/.test(text)) lk = { ...lk, lay: 'full', size: lk.size*LAYOUT_SCALE.full/LAYOUT_SCALE.vertical*0.85 };
   let L, size = lk.size;
   if (lk.lay === 'vertical') L = layoutV(text, lk, size);
   else {
@@ -880,8 +913,6 @@ function layoutLine(text, lk){
     for (let k=0; k<8 && size > lk.size*0.7; k++){ setFont(lk, size); if (words.every(w=>ctx.measureText(w).width <= maxW)) break; size *= 0.93; }
     for (let k=0; k<8; k++){ L = layoutH(text, lk, size, maxW); if (L.rows <= maxRows || size < 36) break; size *= 0.88; }
   }
-  if (layoutCache.size > 300) layoutCache.clear();
-  layoutCache.set(key, L);
   return L;
 }
 
@@ -910,7 +941,10 @@ function glyphTr(anim, i, n, local, dur, size){
 function drawGlyph(g, tr, st, ox, oy, size, vertical, hi){
   if (!tr.show || tr.a <= 0.01) return;
   ctx.save();
-  ctx.globalAlpha *= tr.a;
+  if (g.font) ctx.font = g.font;
+  if (g.size) size = g.size;
+  if (g.tr){ st = { ...st, fill:S.transColor, stroke:Math.round(st.stroke*0.6), glow:st.glow*0.8 }; hi = 0; }
+  ctx.globalAlpha *= tr.a * (g.tr ? S.transOpacity : 1);
   const x = ox + g.x*tr.xs, y = oy + g.y*tr.ys;
   if (tr.clip){ ctx.beginPath(); ctx.rect(x - g.w/2 - size*0.25, y - size*0.72, g.w + size*0.5, size*1.44); ctx.clip(); }
   ctx.translate(x, y + tr.dy);
@@ -930,7 +964,8 @@ function drawGlyph(g, tr, st, ox, oy, size, vertical, hi){
 function drawGlyphLine(G, lk, ox, oy, local, dur, o, k=1, baseA=1, animate=true){
   setFont(lk, G.size);
   const n = G.glyphs.length;
-  const kp = animate && lk.anim === 'karaoke' ? clamp(local/(dur*0.85))*n : -1;
+  const kn = G.nMain ?? n; // カラオケの色づきは本文だけ
+  const kp = animate && lk.anim === 'karaoke' ? clamp(local/(dur*0.85))*kn : -1;
   G.glyphs.forEach((g, i)=>{
     const tr = animate ? glyphTr(lk.anim, i, n, local, dur, G.size) : { a:1, dy:0, s:1, blur:0, clip:false, show:true, xs:1, ys:1 };
     switch (S.lyricOut){
@@ -966,7 +1001,7 @@ function drawLyrics(t){
   if (S.showNext && lk.lay === 'bottom' && L.next && L.next.text){
     ctx.save(); ctx.globalAlpha = 0.45*o;
     ctx.font = `${S.lyricWeight} ${Math.round(S.lyricSize*0.62)}px "${S.lyricFont}"`;
-    const nr = wrapText(L.next.text, W*0.86);
+    const nr = wrapText(splitTrans(L.next.text).main, W*0.86);
     styledText(nr[0] + (nr.length > 1 ? '…' : ''), W/2, oy + G.h/2 + S.lyricSize*0.75, { ...lyricStyle(), stroke:Math.round(S.lyricStroke*0.6) });
     ctx.restore();
   }
